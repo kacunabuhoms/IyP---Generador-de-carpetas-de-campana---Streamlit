@@ -2,9 +2,6 @@
 
 App de Streamlit que lee campañas desde MySQL y genera/reusa en Google Drive la estructura de carpetas año → campaña → subcarpetas.
 
-Diseño completo: `docs/superpowers/specs/2026-06-17-generador-carpetas-campana-design.md`
-Plan de implementación: `docs/superpowers/plans/2026-06-17-generador-carpetas-campana.md`
-
 ## Setup local
 
 1. Instalar dependencias:

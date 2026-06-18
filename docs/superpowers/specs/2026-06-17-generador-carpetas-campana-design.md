@@ -64,15 +64,16 @@ Un archivo de ejemplo con datos reales de salida de este query vive en la raíz 
 6. **Carpetas extra (opcional)** — campo de texto donde el usuario puede escribir nombres de carpetas adicionales (separados por coma) que se crearán junto con las 5 por defecto, **solo para esta ejecución** — no se guardan ni modifican los secrets.
 7. **Botón "Generar"**:
    - Resuelve el ID de carpeta raíz de Drive según la clave de cliente (`.env`). Si no existe el mapeo, `st.error` y se detiene sin tocar Drive.
-   - Construye una vista previa completa del árbol de carpetas que se va a tocar, **sin crear nada todavía**:
-     - Nivel 1: `"{cliente} {año}"` (ej. `"FDA 2026"`) dentro de la carpeta raíz del cliente.
-     - Nivel 2: `nombre_campana_claw` dentro de la carpeta de año (solo se busca si el nivel 1 existe; si el año no existe, el nivel 2 se marca directamente como "se creará", sin llamada a Drive).
-     - Nivel 3: las 5 subcarpetas por defecto (`Fotos`, `Totales`, `Distribución`, `Tipos de Caja`, `Acomodo`, configurables desde secrets) + las carpetas extra ingresadas en el paso 6, dentro de la carpeta de campaña (mismo principio: solo se busca si el nivel 2 existe).
+   - Construye una vista previa del árbol de carpetas que se va a tocar, **sin crear nada todavía**:
+     - Nivel 1 (año): busca `"{cliente} {año}"` (ej. `"FDA 2026"`) dentro de la carpeta raíz del cliente. Es informativo solamente — no se le pregunta nada al usuario; si existe se reusa, si no existe se crea.
+     - Nivel 2 (campaña): busca `nombre_campana_claw` dentro de la carpeta de año (solo se busca si el nivel 1 ya existía; si la carpeta de año no existe, el nivel 2 se marca directamente como "se creará", sin llamada a Drive). **Este es el único nivel interactivo**: si ya existe, se le pregunta al usuario Reusar / Crear nueva.
+     - Nivel 3 (subcarpetas): las 5 subcarpetas por defecto (`Fotos`, `Totales`, `Distribución`, `Tipos de Caja`, `Acomodo`, configurables desde secrets) + las carpetas extra ingresadas en el paso 6, dentro de la carpeta de campaña que resulte del nivel 2. Igual que el nivel 1, es informativo: si ya existen se reusan, si no existen se crean — sin preguntar nada (si se reusa la carpeta de campaña existente, se asume que esas subcarpetas ya están ahí; si falta alguna, simplemente se crea la que falte).
    - El resultado de esta vista previa (existencia + IDs encontrados) se guarda en `st.session_state` para no repetir las búsquedas en Drive en cada re-render posterior.
-8. **Tabla de vista previa** — se muestra cada nodo del árbol con su estado:
-   - Si no existe: se muestra fijo como "Se creará" (sin selector).
-   - Si ya existe: selector Reusar / Crear nueva, con "Reusar" como opción por defecto. Cambiar este selector solo actualiza el estado en `session_state`, no vuelve a consultar Drive.
-9. **Botón "Confirmar y crear"** — recorre el árbol de arriba hacia abajo. Para cada nodo: si la acción es "Reusar", usa el ID ya encontrado; si es "Crear nueva", llama a la API de Drive para crearla y usa el ID resultante como padre del siguiente nivel. Esto ocurre una sola vez, al pulsar el botón.
+8. **Resolución de conflicto de campaña** — se muestra únicamente si la carpeta de campaña (nivel 2) ya existe:
+   - Selector Reusar / Crear nueva, con "Reusar" como opción por defecto.
+   - Si el usuario elige "Crear nueva", aparece un campo de texto con el nombre de la carpeta a crear, precargado con `nombre_campana_claw` (el mismo nombre de la campaña) pero editable — el usuario puede modificarlo antes de confirmar, y ese es el nombre que se usará para la carpeta nueva.
+   - Cambiar este selector o el nombre editado solo actualiza el estado en `session_state`, no vuelve a consultar Drive.
+9. **Botón "Confirmar y crear"** — recorre el árbol de arriba hacia abajo: crea/reusa el año automáticamente, crea/reusa la campaña según la decisión del paso 8 (usando el nombre editado si se eligió "Crear nueva"), y crea/reusa cada subcarpeta de nivel 3 automáticamente dentro de la carpeta de campaña resultante. Esto ocurre una sola vez, al pulsar el botón.
 10. **Resumen final** — tabla con cada carpeta tocada (nombre, acción tomada) + un link directo y clicable a la carpeta de la campaña (nivel 2) en Drive.
 
 ## Estructura de Drive (referencia visual)
@@ -96,7 +97,7 @@ folder_planner.py       → lógica de planeación del árbol de carpetas (año/
   - `create_folder(client, parent_id, name)` — crea la carpeta y devuelve su ID.
   - `get_folder_link(folder_id)` — arma la URL pública de Drive para esa carpeta.
 - **`folder_planner.compute_default_year(today)`** — función pura: año del mes siguiente a `today`.
-- **`folder_planner.build_preview(drive_client, root_id, año, nombre_campaña, subcarpetas)`** — recorre la jerarquía llamando a `find_child_folder` solo cuando el padre del nivel ya existe; devuelve una lista de nodos `{nivel, nombre, existe, folder_id, acción_default}`.
+- **`folder_planner.build_preview(drive_client, root_id, año, nombre_campaña, subcarpetas)`** — recorre la jerarquía llamando a `find_child_folder` solo cuando el padre del nivel ya existe; devuelve una lista de nodos `{nivel, nombre, existe, folder_id}`. Solo el nodo de nivel "campaña" es interactivo (requiere decisión Reusar/Crear nueva + nombre editable si aplica); año y subcarpetas se resuelven automáticamente (reusar si existen, crear si no) sin intervención del usuario.
 
 ## Configuración: `.env` vs Streamlit secrets
 

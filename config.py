@@ -1,20 +1,12 @@
-import os
-
 import streamlit as st
-
-_DRIVE_ROOT_ENV_VARS = {
-    "FDA": "DRIVE_ROOT_FDA",
-    "FAB": "DRIVE_ROOT_FAB",
-    "DQ": "DRIVE_ROOT_DQ",
-    "YZA": "DRIVE_ROOT_YZA",
-}
 
 
 def get_drive_root_id(cliente: str) -> str | None:
-    env_var = _DRIVE_ROOT_ENV_VARS.get(cliente)
-    if env_var is None:
-        return None
-    return os.environ.get(env_var)
+    return st.secrets.get("drive_roots", {}).get(cliente)
+
+
+def get_campaigns_api_url() -> str:
+    return st.secrets["campaigns_api_url"]
 
 
 def get_default_subfolders() -> list[str]:

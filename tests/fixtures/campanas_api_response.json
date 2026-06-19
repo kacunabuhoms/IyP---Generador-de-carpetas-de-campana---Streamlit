@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "campanas": [
+    {
+      "campaign_id": 1,
+      "campana": "Campana Marzo",
+      "cliente": "FDA",
+      "fecha_inicio": null,
+      "fecha_fin": null
+    },
+    {
+      "campaign_id": 2,
+      "campana": "Campana Marzo",
+      "cliente": "FDA",
+      "fecha_inicio": null,
+      "fecha_fin": null
+    },
+    {
+      "campaign_id": 3,
+      "campana": "Campana Abril",
+      "cliente": "FDA",
+      "fecha_inicio": "2026-01-01T00:00:00Z",
+      "fecha_fin": "2026-01-02T00:00:00Z"
+    },
+    {
+      "campaign_id": 4,
+      "campana": "Campana Verano",
+      "cliente": "DQ",
+      "fecha_inicio": null,
+      "fecha_fin": null
+    }
+  ]
+}

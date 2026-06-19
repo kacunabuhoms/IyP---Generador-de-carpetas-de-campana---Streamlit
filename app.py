@@ -1,15 +1,12 @@
 from datetime import date
 
 import streamlit as st
-from dotenv import load_dotenv
 
 import campaign_data
+import campaigns_service
 import config
 import drive_service
 import folder_planner
-import sql_service
-
-load_dotenv()
 
 st.set_page_config(page_title="Generador de carpetas de campana", page_icon="📁")
 
@@ -27,12 +24,12 @@ def _gate_de_contrasena() -> bool:
     return False
 
 
-def _cargar_campanas(conn) -> bool:
+def _cargar_campanas() -> bool:
     try:
-        st.session_state["campanas_df"] = sql_service.get_campaigns(conn)
+        st.session_state["campanas_df"] = campaigns_service.get_campaigns()
         return True
     except Exception:
-        st.error("No se pudo conectar a la base de datos.")
+        st.error("No se pudo obtener las campañas.")
         return False
 
 
@@ -106,27 +103,22 @@ def main() -> None:
     if not _gate_de_contrasena():
         return
 
-    conn = st.connection("mysql", type="sql")
-
     if "campanas_df" not in st.session_state:
-        if not _cargar_campanas(conn):
+        if not _cargar_campanas():
             return
 
-    if st.button("🔄 Refrescar campañas de Claw"):
-        if _cargar_campanas(conn):
+    if st.button("🔄 Refrescar campañas"):
+        if _cargar_campanas():
             st.session_state.pop("preview", None)
             st.session_state.pop("resultado_ejecucion", None)
 
     df = st.session_state["campanas_df"]
 
     clientes = campaign_data.unique_clients(df)
-    nombre_cliente = st.selectbox("Cliente", clientes)
+    cliente_clave = st.selectbox("Cliente", clientes)
 
-    campanas_cliente = campaign_data.campaigns_for_client(df, nombre_cliente)
-    nombre_campana = st.selectbox("Campaña", campanas_cliente["nombre_campana_claw"].tolist())
-
-    fila_campana = campanas_cliente[campanas_cliente["nombre_campana_claw"] == nombre_campana].iloc[0]
-    cliente_clave = fila_campana["cliente"]
+    campanas_cliente = campaign_data.campaigns_for_client(df, cliente_clave)
+    nombre_campana = st.selectbox("Campaña", campanas_cliente["campana"].tolist())
 
     anio_default = folder_planner.compute_default_year(date.today())
     anio = st.number_input("Año", min_value=2000, max_value=2100, value=anio_default, step=1)

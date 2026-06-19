@@ -1,6 +1,6 @@
 # Generador de carpetas de campaña
 
-App de Streamlit que lee campañas desde MySQL y genera/reusa en Google Drive la estructura de carpetas año → campaña → subcarpetas.
+App de Streamlit que lee campañas desde una API y genera/reusa en Google Drive la estructura de carpetas año → campaña → subcarpetas.
 
 ## Setup local
 
@@ -18,7 +18,8 @@ App de Streamlit que lee campañas desde MySQL y genera/reusa en Google Drive la
 
    Editar `.streamlit/secrets.toml` con:
    - `app_password`: la contraseña de acceso a la app.
-   - `[connections.mysql]`: credenciales de la base de datos MySQL (DigitalOcean).
+   - `campaigns_api_url`: URL del endpoint que devuelve las campañas (`GET` que responde `{"ok": true, "campanas": [...]}`).
+   - `[drive_roots]`: mapeo de código de cliente (`FDA`, `FAB`, `DQ`, `YZA`, ...) a ID de carpeta raíz en Drive.
    - `[gcp_service_account]`: el JSON completo de la service account de Google (Drive API habilitada).
 
 3. Compartir las 4 carpetas raíz de Drive (FDA, FAB, DQ, YZA) con el `client_email` de la service account, como Editor.
@@ -37,11 +38,11 @@ App de Streamlit que lee campañas desde MySQL y genera/reusa en Google Drive la
 
 ## Deploy en Streamlit Community Cloud
 
-1. Subir el repo a GitHub (incluye `.env`, que solo contiene IDs de carpetas de Drive, no es sensible).
+1. Subir el repo a GitHub (`.streamlit/secrets.toml` y `.env` están en `.gitignore`, no se suben).
 2. Crear la app en [share.streamlit.io](https://share.streamlit.io) apuntando al repo y a `app.py`.
 3. En *Settings → Secrets* de la app, pegar el contenido completo de tu `.streamlit/secrets.toml` local (con los valores reales).
 4. Verificar el flujo completo contra la URL pública: login, selección de cliente/campaña, generación de carpetas, y el caso de carpeta de campaña ya existente (Reusar/Crear nueva).
 
 ## Clientes sin carpeta raíz configurada
 
-Las claves `TH` y `MK` existen en los datos de campañas pero aún no tienen carpeta raíz en `.env`. Si se selecciona una campaña de esos clientes, la app muestra un error (`No hay carpeta raíz configurada para el cliente 'TH'.`) sin tocar Drive. Para habilitarlos, agregar `DRIVE_ROOT_TH` / `DRIVE_ROOT_MK` a `.env` y su mapeo en `config.py`.
+Las claves `TH` y `MK` existen en los datos de campañas pero aún no tienen carpeta raíz en `[drive_roots]`. Si se selecciona una campaña de esos clientes, la app muestra un error (`No hay carpeta raíz configurada para el cliente 'TH'.`) sin tocar Drive. Para habilitarlos, agregar `TH = "..."` / `MK = "..."` a `[drive_roots]` en `secrets.toml`.

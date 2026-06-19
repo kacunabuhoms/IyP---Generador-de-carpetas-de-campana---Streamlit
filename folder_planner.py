@@ -48,6 +48,36 @@ def build_preview(drive, root_id: str, cliente: str, anio: int, nombre_campana: 
     )
 
 
+def build_subfolder_preview(
+    drive, campana_folder_id: str | None, subfolder_names: list[str]
+) -> list[PreviewNode]:
+    nodos = []
+    for nombre in subfolder_names:
+        folder_id = None
+        if campana_folder_id is not None:
+            folder_id = drive_service.find_child_folder(drive, campana_folder_id, nombre)
+        nodos.append(PreviewNode(nombre=nombre, existe=folder_id is not None, folder_id=folder_id))
+    return nodos
+
+
+def render_tree(
+    anio: PreviewNode, campana_nombre: str, campana_reutilizada: bool, subcarpetas: list[PreviewNode]
+) -> str:
+    anio_estado = "ya existe" if anio.existe else "se creará"
+    campana_estado = "se reusará" if campana_reutilizada else "se creará"
+
+    lineas = [
+        f"{anio.nombre}/  ({anio_estado})",
+        f"└── {campana_nombre}/  ({campana_estado})",
+    ]
+    for i, sub in enumerate(subcarpetas):
+        conector = "└──" if i == len(subcarpetas) - 1 else "├──"
+        sub_estado = "ya existe" if sub.existe else "se creará"
+        lineas.append(f"    {conector} {sub.nombre}/  ({sub_estado})")
+
+    return "\n".join(lineas)
+
+
 def execute_plan(
     drive,
     root_id: str,

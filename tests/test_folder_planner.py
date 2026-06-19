@@ -149,6 +149,95 @@ def test_execute_plan_creates_new_campana_with_edited_name_even_if_original_exis
     assert resultado.campana_folder_id == "id-Campana X (2)"
 
 
+def test_build_subfolder_preview_marks_all_missing_when_campana_is_new(monkeypatch):
+    calls = []
+
+    def fake_find(drive, parent_id, name):
+        calls.append((parent_id, name))
+        return "should-not-be-called"
+
+    monkeypatch.setattr(folder_planner.drive_service, "find_child_folder", fake_find)
+
+    resultado = folder_planner.build_subfolder_preview(
+        drive=object(), campana_folder_id=None, subfolder_names=["Fotos", "Totales"]
+    )
+
+    assert calls == []
+    assert [n.nombre for n in resultado] == ["Fotos", "Totales"]
+    assert all(n.existe is False and n.folder_id is None for n in resultado)
+
+
+def test_build_subfolder_preview_checks_each_subfolder_when_campana_exists(monkeypatch):
+    def fake_find(drive, parent_id, name):
+        assert parent_id == "campana_id_1"
+        if name == "Fotos":
+            return "fotos_id"
+        return None
+
+    monkeypatch.setattr(folder_planner.drive_service, "find_child_folder", fake_find)
+
+    resultado = folder_planner.build_subfolder_preview(
+        drive=object(), campana_folder_id="campana_id_1", subfolder_names=["Fotos", "Totales"]
+    )
+
+    assert resultado[0].nombre == "Fotos"
+    assert resultado[0].existe is True
+    assert resultado[0].folder_id == "fotos_id"
+    assert resultado[1].nombre == "Totales"
+    assert resultado[1].existe is False
+    assert resultado[1].folder_id is None
+
+
+def test_render_tree_when_anio_and_campana_are_new():
+    anio = folder_planner.PreviewNode(nombre="FDA 2026", existe=False, folder_id=None)
+    subcarpetas = [
+        folder_planner.PreviewNode(nombre="Fotos", existe=False, folder_id=None),
+        folder_planner.PreviewNode(nombre="Totales", existe=False, folder_id=None),
+    ]
+
+    arbol = folder_planner.render_tree(
+        anio=anio, campana_nombre="Campana X", campana_reutilizada=False, subcarpetas=subcarpetas
+    )
+
+    assert arbol == (
+        "FDA 2026/  (se creará)\n"
+        "└── Campana X/  (se creará)\n"
+        "    ├── Fotos/  (se creará)\n"
+        "    └── Totales/  (se creará)"
+    )
+
+
+def test_render_tree_when_reusing_existing_campana_with_mixed_subfolders():
+    anio = folder_planner.PreviewNode(nombre="FDA 2026", existe=True, folder_id="anio_id_1")
+    subcarpetas = [
+        folder_planner.PreviewNode(nombre="Fotos", existe=True, folder_id="fotos_id"),
+        folder_planner.PreviewNode(nombre="Totales", existe=False, folder_id=None),
+        folder_planner.PreviewNode(nombre="Acomodo", existe=False, folder_id=None),
+    ]
+
+    arbol = folder_planner.render_tree(
+        anio=anio, campana_nombre="Campana X", campana_reutilizada=True, subcarpetas=subcarpetas
+    )
+
+    assert arbol == (
+        "FDA 2026/  (ya existe)\n"
+        "└── Campana X/  (se reusará)\n"
+        "    ├── Fotos/  (ya existe)\n"
+        "    ├── Totales/  (se creará)\n"
+        "    └── Acomodo/  (se creará)"
+    )
+
+
+def test_render_tree_with_no_subcarpetas():
+    anio = folder_planner.PreviewNode(nombre="FDA 2026", existe=False, folder_id=None)
+
+    arbol = folder_planner.render_tree(
+        anio=anio, campana_nombre="Campana X", campana_reutilizada=False, subcarpetas=[]
+    )
+
+    assert arbol == "FDA 2026/  (se creará)\n└── Campana X/  (se creará)"
+
+
 def test_execute_plan_stops_and_reports_error_on_drive_failure(monkeypatch):
     def fake_create(drive, parent_id, name):
         if name == "Campana X":

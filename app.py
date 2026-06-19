@@ -28,9 +28,8 @@ def _cargar_campanas() -> bool:
     try:
         st.session_state["campanas_df"] = campaigns_service.get_campaigns()
         return True
-    except Exception as e:
+    except Exception:
         st.error("No se pudo obtener las campañas.")
-        st.exception(e)  # DEBUG TEMPORAL: quitar una vez identificada la causa
         return False
 
 
@@ -55,10 +54,6 @@ def _mostrar_resumen(resultado) -> None:
 
 def _mostrar_vista_previa_y_confirmar(preview) -> None:
     st.subheader("Vista previa")
-    st.write(
-        f"Año: **{preview.anio.nombre}** — "
-        f"{'ya existe, se reusará' if preview.anio.existe else 'se creará'}"
-    )
 
     if preview.campana.existe:
         accion = st.radio(
@@ -77,9 +72,18 @@ def _mostrar_vista_previa_y_confirmar(preview) -> None:
     else:
         accion = "crear_nueva"
         nombre_final = preview.campana.nombre
-        st.write(f"Campaña: **{nombre_final}** — se creará")
 
     subcarpetas = config.get_default_subfolders() + st.session_state.get("carpetas_extra", [])
+
+    reutilizando_campana = accion == "reusar" and preview.campana.existe
+    campana_id_para_check = preview.campana.folder_id if reutilizando_campana else None
+    drive_lectura = drive_service.build_client()
+    subcarpetas_preview = folder_planner.build_subfolder_preview(
+        drive_lectura, campana_id_para_check, subcarpetas
+    )
+    st.code(
+        folder_planner.render_tree(preview.anio, nombre_final, reutilizando_campana, subcarpetas_preview)
+    )
 
     if st.button("Confirmar y crear"):
         drive = drive_service.build_client()

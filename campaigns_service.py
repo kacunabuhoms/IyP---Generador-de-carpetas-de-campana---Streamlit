@@ -8,7 +8,7 @@ def get_campaigns() -> pd.DataFrame:
     response = requests.get(
         config.get_campaigns_api_url(),
         headers={"Accept": "application/json"},
-        timeout=10,
+        timeout=20,
     )
     response.raise_for_status()
     data = response.json()

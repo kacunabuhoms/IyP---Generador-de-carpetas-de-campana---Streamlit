@@ -46,6 +46,21 @@ def test_get_campaigns_returns_dataframe_from_api(monkeypatch):
     assert df.iloc[0]["campana"] == "FDA SALUD VISUAL26"
 
 
+def test_get_campaigns_uses_20_second_timeout(monkeypatch):
+    monkeypatch.setattr(config.st, "secrets", {"campaigns_api_url": "https://example.com/allCampaigns"})
+    captured = {}
+
+    def fake_get(url, headers=None, timeout=None):
+        captured["timeout"] = timeout
+        return _StubResponse({"ok": True, "campanas": []})
+
+    monkeypatch.setattr(campaigns_service.requests, "get", fake_get)
+
+    campaigns_service.get_campaigns()
+
+    assert captured["timeout"] == 20
+
+
 def test_get_campaigns_raises_when_api_reports_not_ok(monkeypatch):
     monkeypatch.setattr(config.st, "secrets", {"campaigns_api_url": "https://example.com/allCampaigns"})
 

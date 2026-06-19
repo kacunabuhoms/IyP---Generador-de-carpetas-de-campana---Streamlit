@@ -28,8 +28,10 @@ def _cargar_campanas() -> bool:
     try:
         st.session_state["campanas_df"] = campaigns_service.get_campaigns()
         return True
-    except Exception:
+    except Exception as e:
         st.error("No se pudo obtener las campañas.")
+        with st.expander("Detalles técnicos"):
+            st.exception(e)
         return False
 
 

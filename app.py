@@ -35,6 +35,24 @@ def _cargar_campanas() -> bool:
         return False
 
 
+def _estilo_boton_marcado(contenedor_key: str, color: str, marcado: bool) -> None:
+    fondo = color if marcado else "transparent"
+    texto = "#ffffff" if marcado else color
+    st.markdown(
+        f"""
+        <style>
+        .st-key-{contenedor_key} button {{
+            background-color: {fondo};
+            border: 2px solid {color};
+            color: {texto};
+            width: 100%;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _parsear_carpetas_extra(texto: str) -> list[str]:
     nombres = [parte.strip() for parte in texto.split(",")]
     nombres_unicos: list[str] = []
@@ -164,15 +182,22 @@ def main() -> None:
 
     existe_en_claw = st.session_state.get("existe_en_claw")
 
+    st.write("¿La campaña ya existe en Claw?")
+    col_si, col_no = st.columns(2)
+    with col_si:
+        _estilo_boton_marcado("contenedor_existe_si", "#21c354", existe_en_claw is True)
+        with st.container(key="contenedor_existe_si"):
+            if st.button("Sí", key="existe_en_claw_si", use_container_width=True):
+                st.session_state["existe_en_claw"] = True
+                st.rerun()
+    with col_no:
+        _estilo_boton_marcado("contenedor_existe_no", "#e03131", existe_en_claw is False)
+        with st.container(key="contenedor_existe_no"):
+            if st.button("No", key="existe_en_claw_no", use_container_width=True):
+                st.session_state["existe_en_claw"] = False
+                st.rerun()
+
     if existe_en_claw is None:
-        st.write("¿La campaña ya existe en Claw?")
-        col_si, col_no = st.columns(2)
-        if col_si.button("Sí", key="existe_en_claw_si"):
-            st.session_state["existe_en_claw"] = True
-            st.rerun()
-        if col_no.button("No", key="existe_en_claw_no"):
-            st.session_state["existe_en_claw"] = False
-            st.rerun()
         return
 
     if existe_en_claw:

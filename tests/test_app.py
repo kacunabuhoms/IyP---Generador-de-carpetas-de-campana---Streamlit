@@ -98,6 +98,17 @@ def test_clicking_no_shows_nombre_exacto_textbox(monkeypatch):
     assert at.text_input[0].label == "Nombre EXACTO que tendrá la campaña en CLAW"
 
 
+def test_existe_en_claw_buttons_remain_visible_after_choosing(monkeypatch):
+    at = _app_logueada(monkeypatch)
+    at.selectbox[0].select("FDA").run(timeout=10)
+    at.button(key="existe_en_claw_si").click().run(timeout=10)
+
+    labels = [b.label for b in at.button]
+    assert "Sí" in labels
+    assert "No" in labels
+    assert len(at.selectbox) == 2
+
+
 def test_changing_cliente_resets_existe_en_claw_choice(monkeypatch):
     at = _app_logueada(monkeypatch)
     at.selectbox[0].select("FDA").run(timeout=10)
